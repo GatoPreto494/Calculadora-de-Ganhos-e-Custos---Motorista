@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculadora de Ganhos e Custos - Motorista</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--surface:#0b1220;--white:#fff;--black:#000}
+    *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
+    body{margin:0;background:linear-gradient(180deg,#071021 0%, #071428 100%);color:#e6eef6;padding:20px}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+    h1{font-size:20px;margin:0}
+    .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .card{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input[type="text"], input[type="number"], select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
+    /* Estilo para o select com fundo branco e letras pretas */
+    select {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background-color: var(--white);
+      color: var(--black);
+      border: 1px solid #ccc;
+      padding: 8px;
+    }
+    .row{display:flex;gap:8px}
+    .small{width:120px}
+    .actions{display:flex;gap:8px;margin-top:8px}
+    button{background:var(--accent);color:#042027;border:none;padding:8px 12px;border-radius:8px;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .full{grid-column:1 / -1}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left;font-size:13px}
+    .result{font-size:15px}
+    .muted{color:var(--muted)}
+    .flex-between{display:flex;justify-content:space-between;align-items:center}
+    .tag{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:8px}
+    .danger{background:#ffefef;color:#7a1313}
+    /* Estilo para campos de entrada automáticos */
+    input.auto-calc {
+        background-color: rgba(255,255,255,0.1);
+        cursor: not-allowed;
+    }
+    .label-with-info, .table-label-with-info {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .info-icon {
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      width: 16px;
+      height: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--muted);
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    .info-icon:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+    .tooltip-box {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: var(--card);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      z-index: 100;
+      max-width: 90%;
+      width: 400px;
+      display: none;
+    }
+    .tooltip-box .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    .tooltip-box h4 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+    .tooltip-box p {
+      margin-bottom: 0;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    .suggestion-text {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 5px;
+    }
+    .feedback-section {
+        margin-top: 20px;
+        text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Calculadora de Ganhos e Custos</h1>
+    <div class="muted">Preencha os dados e os cálculos serão feitos automaticamente.</div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <div class="flex-between"><strong>1. Configurações</strong><span class="muted">Período e tipo de veículo</span></div>
+      <label class="label-with-info">
+        <span>Tipo de carro</span>
+        <span class="info-icon" data-info-target="tipoCarro">?</span>
+      </label>
+      <select id="tipoCarro">
+        <option value="proprio">Próprio</option>
+        <option value="financiado" selected>Financiado</option>
+        <option value="alugado">Alugado</option>
+      </select>
+
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Período de cálculo (dias)</span>
+            <span class="info-icon" data-info-target="periodoDias">?</span>
+          </label>
+          <input type="text" data-type="number" id="periodoDias" placeholder="15" />
+        </div>
+        <div style="width:160px">
+          <label class="label-with-info">
+            <span>KM que você roda por dia</span>
+            <span class="info-icon" data-info-target="kmPorDia">?</span>
+          </label>
+          <input type="text" data-type="number" id="kmPorDia" placeholder="100" />
+        </div>
+      </div>
+
+      <div style="margin-top:8px" class="row">
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Quilometragem atual (odômetro)</span>
+            <span class="info-icon" data-info-target="kmAtual">?</span>
+          </label>
+          <input type="text" data-type="number" id="kmAtual" placeholder="60.000" />
+        </div>
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Quilometragem prevista ao fim do período</span>
+            <span class="info-icon" data-info-target="kmFinalPrevisto">?</span>
+          </label>
+          <input type="text" id="kmFinalPrevisto" class="auto-calc" readonly />
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="flex-between"><strong>2. Ganhos e metas</strong><span class="muted">Receita e objetivos</span></div>
+      <div class="row">
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Ganho por KM (R$)</span>
+            <span class="info-icon" data-info-target="ganhoPorKm">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="ganhoPorKm" placeholder="3,30" />
+        </div>
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Valor ganho no período (R$)</span>
+            <span class="info-icon" data-info-target="valorGanho">?</span>
+          </label>
+          <input type="text" id="valorGanho" class="auto-calc" readonly />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Meta diária bruta (R$)</span>
+            <span class="info-icon" data-info-target="metaDiaria">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="metaDiaria" placeholder="400,00" />
+          <div class="suggestion-text" id="sugestaoGanhoKm"></div>
+        </div>
+        <div style="width:120px">
+          <label class="label-with-info">
+            <span>Horas trabalhadas por dia</span>
+            <span class="info-icon" data-info-target="horasTrabalhadasDia">?</span>
+          </label>
+          <input type="text" data-type="number" id="horasTrabalhadasDia" placeholder="11,5" />
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="flex-between"><strong>3. Combustível</strong><span class="muted">Consumo e gasto</span></div>
+      <div class="row">
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Preço por litro (R$)</span>
+            <span class="info-icon" data-info-target="precoLitro">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="precoLitro" placeholder="5,19" />
+        </div>
+        <div style="flex:1">
+          <label class="label-with-info">
+            <span>Consumo (km/l)</span>
+            <span class="info-icon" data-info-target="consumo">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="consumo" placeholder="10" />
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <label class="label-with-info">
+            <span>Valor gasto com combustível no período (R$)</span>
+            <span class="info-icon" data-info-target="gastoCombustivel">?</span>
+          </label>
+        <input type="text" id="gastoCombustivel" class="auto-calc" readonly />
+      </div>
+      <div style="margin-top:8px">
+        <label class="label-with-info">
+            <span>Porcentagem gasta sobre a receita (%)</span>
+            <span class="info-icon" data-info-target="pctCombustivel">?</span>
+          </label>
+        <input type="text" id="pctCombustivel" class="auto-calc" readonly />
+      </div>
+    </section>
+
+    <section class="card" id="secaoCustos">
+      <div class="flex-between"><strong>4. Custos fixos</strong><span class="muted">Aluguel / parcela / seguro / estacionamento</span></div>
+
+      <div id="blocoAluguel">
+        <div style="margin-top:8px">
+          <label class="label-with-info">
+            <span>Aluguel mensal (R$) — só se alugado</span>
+            <span class="info-icon" data-info-target="valorAluguel">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="valorAluguel" placeholder="0,00" />
+        </div>
+      </div>
+
+      <div id="blocoProprioFinanciado">
+        <div style="margin-top:8px" class="row">
+          <div style="flex:1">
+            <label class="label-with-info">
+              <span>Parcela mensal (financiamento) (R$)</span>
+              <span class="info-icon" data-info-target="parcelaMensal">?</span>
+            </label>
+            <input type="text" data-type="decimal" id="parcelaMensal" placeholder="1.780,00" />
+          </div>
+          <div style="flex:1">
+            <label class="label-with-info">
+              <span>Número de parcelas restantes</span>
+              <span class="info-icon" data-info-target="parcelasRestantes">?</span>
+            </label>
+            <input type="text" data-type="number" id="parcelasRestantes" placeholder="0" />
+          </div>
+        </div>
+        <div style="margin-top:8px" class="row">
+          <div style="flex:1">
+            <label class="label-with-info">
+              <span>Seguro mensal (R$)</span>
+              <span class="info-icon" data-info-target="seguroMensal">?</span>
+            </label>
+            <input type="text" data-type="decimal" id="seguroMensal" placeholder="0,00" />
+          </div>
+          <div style="flex:1">
+            <label class="label-with-info">
+              <span>IPVA/licenciamento mensal (R$) — opcional</span>
+              <span class="info-icon" data-info-target="ipvaMensal">?</span>
+            </label>
+            <input type="text" data-type="decimal" id="ipvaMensal" placeholder="0,00" />
+          </div>
+        </div>
+        <div style="margin-top:8px" class="row">
+          <div style="flex:1">
+            <label class="label-with-info">
+              <span>Depreciação mensal (R$) — opcional</span>
+              <span class="info-icon" data-info-target="depreciacaoMensal">?</span>
+            </label>
+            <input type="text" data-type="decimal" id="depreciacaoMensal" placeholder="0,00" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="secaoManutencao">
+      <div class="flex-between"><strong>5. Manutenção preventiva</strong><span class="muted">Óleo, pneus, limpeza</span></div>
+
+      <div id="blocoManutencaoPadrao">
+        <div style="margin-top:6px">
+          <label class="label-with-info">
+            <span>Troca de óleo — intervalo (km)</span>
+            <span class="info-icon" data-info-target="intervaloOleo">?</span>
+          </label>
+          <input type="text" data-type="number" id="intervaloOleo" placeholder="10.000" />
+          <label style="margin-top:6px" class="label-with-info">
+            <span>Custo médio por troca (R$)</span>
+            <span class="info-icon" data-info-target="custoOleo">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="custoOleo" placeholder="150,00" />
+        </div>
+        <div style="margin-top:8px">
+          <label class="label-with-info">
+            <span>Troca de pneus — intervalo (km)</span>
+            <span class="info-icon" data-info-target="intervaloPneu">?</span>
+          </label>
+          <input type="text" data-type="number" id="intervaloPneu" placeholder="50.000" />
+          <label style="margin-top:6px" class="label-with-info">
+            <span>Custo médio por jogo (R$)</span>
+            <span class="info-icon" data-info-target="custoPneu">?</span>
+          </label>
+          <input type="text" data-type="decimal" id="custoPneu" placeholder="1.200,00" />
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <label class="label-with-info">
+            <span>Limpeza / lava-rápido — frequência (dias)</span>
+            <span class="info-icon" data-info-target="freqLavagem">?</span>
+        </label>
+        <input type="text" data-type="number" id="freqLavagem" placeholder="7" />
+        <label style="margin-top:6px" class="label-with-info">
+            <span>Custo por lavagem (R$)</span>
+            <span class="info-icon" data-info-target="custoLavagem">?</span>
+        </label>
+        <input type="text" data-type="decimal" id="custoLavagem" placeholder="30,00" />
+      </div>
+
+      <div style="margin-top:8px">
+        <label class="label-with-info">
+            <span>Outras manutenções (nome | intervalo km/dias | custo)</span>
+            <span class="info-icon" data-info-target="outrasManutencoes">?</span>
+        </label>
+        <div id="outrasManutencoes"></div>
+        <div class="actions">
+          <button id="btnAddManut">+ Adicionar manutenção</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card full">
+      <div class="flex-between">
+        <strong>6. Outros custos fixos customizáveis</strong>
+        <span class="info-icon" data-info-target="outrosFixosLista">?</span>
+      </div>
+      <div class="muted">Ex: aluguel casa, telefone — o sistema rateia conforme periodicidade</div>
+      <div id="outrosFixosLista"></div>
+      <div class="actions" style="margin-top:8px">
+        <button id="btnAddFix">+ Adicionar custo fixo</button>
+      </div>
+    </section>
+
+    <section class="card full">
+      <div class="flex-between"><strong>7. Ações</strong><span class="muted">Executar cálculos</span></div>
+      <div class="actions">
+        <button id="btnCalcular">Calcular</button>
+        <button id="btnExportarJson">Exportar JSON</button>
+        <button id="btnReset" class="ghost">Limpar</button>
+      </div>
+
+      <div class="feedback-section">
+        <p class="muted" style="margin-bottom: 8px;">Encontrou um erro nas contas ou quer sugerir algo?</p>
+        <a href="https://wa.me/5511947406124?text=Olá, encontrei um erro na calculadora de gastos." target="_blank" style="text-decoration:none;">
+            <button>Falar com Luiz pelo WhatsApp</button>
+        </a>
+      </div>
+
+      <div id="resumo" style="margin-top:12px"></div>
+    </section>
+  </main>
+
+  <div id="tooltip-container" class="tooltip-box">
+    <button class="close-btn" onclick="document.getElementById('tooltip-container').style.display = 'none';">&times;</button>
+    <h4 id="tooltip-title"></h4>
+    <p id="tooltip-text"></p>
+  </div>
+
+  <script>
+    // Helpers para facilitar a seleção de elementos
+    const $ = id => document.getElementById(id);
+    const $$ = selector => document.querySelectorAll(selector);
+
+    // Seletores para os elementos do DOM
+    const inputs = $$('input, select');
+    const tipoCarroSelect = $('tipoCarro');
+    const periodoDiasInput = $('periodoDias');
+    const kmPorDiaInput = $('kmPorDia');
+    const kmAtualInput = $('kmAtual');
+    const kmFinalPrevistoInput = $('kmFinalPrevisto');
+    const ganhoPorKmInput = $('ganhoPorKm');
+    const valorGanhoInput = $('valorGanho');
+    const precoLitroInput = $('precoLitro');
+    const consumoInput = $('consumo');
+    const gastoCombustivelInput = $('gastoCombustivel');
+    const pctCombustivelInput = $('pctCombustivel');
+    const secaoCustos = $('secaoCustos');
+    const secaoManutencao = $('secaoManutencao');
+    const blocoAluguel = $('blocoAluguel');
+    const blocoProprioFinanciado = $('blocoProprioFinanciado');
+    const resumoContainer = $('resumo');
+    const outrosFixosLista = $('outrosFixosLista');
+    const outrasManutencoesDiv = $('outrasManutencoes');
+    const sugestaoGanhoKmDiv = $('sugestaoGanhoKm');
+    const tooltipContainer = $('tooltip-container');
+    const tooltipTitle = $('tooltip-title');
+    const tooltipText = $('tooltip-text');
+    
+    const campoExplicacoes = {
+        tipoCarro: {
+            titulo: 'Tipo de Carro',
+            texto: 'Altere esta opção para que os custos fixos sejam ajustados automaticamente. Se for alugado, a calculadora desconsidera custos de financiamento, IPVA e depreciação, por exemplo.'
+        },
+        periodoDias: {
+            titulo: 'Período de Cálculo (dias)',
+            texto: 'Defina a quantidade de dias para o cálculo. Todos os custos e ganhos serão proporcionais a este período.'
+        },
+        kmPorDia: {
+            titulo: 'KM que você roda por dia',
+            texto: 'Informe quantos quilômetros você roda em média por dia. A calculadora usará este valor para estimar a quilometragem total no período.'
+        },
+        kmAtual: {
+            titulo: 'Quilometragem atual (odômetro)',
+            texto: 'O valor atual do odômetro do seu carro. Usado para calcular o custo de manutenções com base na quilometragem rodada.'
+        },
+        kmFinalPrevisto: {
+            titulo: 'Quilometragem prevista ao fim do período',
+            texto: 'Este valor é calculado automaticamente com base na quilometragem atual e no KM que você roda por dia.'
+        },
+        ganhoPorKm: {
+            titulo: 'Ganho por KM (R$)',
+            texto: 'O valor líquido (já descontadas taxas da plataforma, pedágios, etc.) que você ganha por quilômetro rodado.'
+        },
+        valorGanho: {
+            titulo: 'Valor ganho no período',
+            texto: 'Este é o total de ganhos brutos estimados para o período, calculado automaticamente com base no KM rodado no período e no seu ganho por KM.'
+        },
+        metaDiaria: {
+            titulo: 'Meta diária bruta (R$)',
+            texto: 'Sua meta de faturamento por dia, antes de qualquer desconto. A calculadora usará este valor para sugerir o ganho por KM necessário.'
+        },
+        horasTrabalhadasDia: {
+            titulo: 'Horas trabalhadas por dia',
+            texto: 'A quantidade de horas que você trabalha em média por dia. Usado para calcular o ganho por hora.'
+        },
+        precoLitro: {
+            titulo: 'Preço por litro (R$)',
+            texto: 'Preço médio do litro de combustível que você utiliza.'
+        },
+        consumo: {
+            titulo: 'Consumo (km/l)',
+            texto: 'Quantos quilômetros seu carro faz por litro de combustível. O valor pode ser encontrado no manual do veículo ou em testes reais.'
+        },
+        gastoCombustivel: {
+            titulo: 'Valor gasto com combustível no período',
+            texto: 'Valor total gasto com combustível no período, calculado automaticamente com base na quilometragem e no consumo do carro.'
+        },
+        pctCombustivel: {
+            titulo: 'Porcentagem gasta sobre a receita',
+            texto: 'A porcentagem que o custo com combustível representa sobre o seu ganho bruto no período.'
+        },
+        valorAluguel: {
+            titulo: 'Aluguel mensal (R$)',
+            texto: 'Custo mensal do aluguel do veículo, caso seja alugado.'
+        },
+        parcelaMensal: {
+            titulo: 'Parcela mensal (financiamento) (R$)',
+            texto: 'Valor da parcela mensal do financiamento do seu veículo.'
+        },
+        parcelasRestantes: {
+            titulo: 'Número de parcelas restantes',
+            texto: 'Se o carro for financiado, informe o número de parcelas restantes para projetar a quilometragem e manutenções até o fim do financiamento.'
+        },
+        seguroMensal: {
+            titulo: 'Seguro mensal (R$)',
+            texto: 'Custo mensal do seguro do veículo.'
+        },
+        ipvaMensal: {
+            titulo: 'IPVA/licenciamento mensal (R$)',
+            texto: 'Estimativa mensal do valor do IPVA e licenciamento.'
+        },
+        depreciacaoMensal: {
+            titulo: 'Depreciação mensal (R$)',
+            texto: 'Estimativa mensal da desvalorização do veículo.'
+        },
+        intervaloOleo: {
+            titulo: 'Troca de óleo — intervalo (km)',
+            texto: 'Quantos quilômetros seu carro roda entre as trocas de óleo. O custo será proporcional ao KM rodado no período.'
+        },
+        custoOleo: {
+            titulo: 'Custo médio por troca (R$)',
+            texto: 'Valor médio gasto em cada troca de óleo.'
+        },
+        intervaloPneu: {
+            titulo: 'Troca de pneus — intervalo (km)',
+            texto: 'Estimativa de quantos quilômetros os pneus duram. O custo será proporcional ao KM rodado no período.'
+        },
+        custoPneu: {
+            titulo: 'Custo médio por jogo (R$)',
+            texto: 'Custo total para a troca dos quatro pneus.'
+        },
+        freqLavagem: {
+            titulo: 'Limpeza / lava-rápido — frequência (dias)',
+            texto: 'Com que frequência (a cada quantos dias) você lava o carro. O custo será proporcional ao período de cálculo.'
+        },
+        custoLavagem: {
+            titulo: 'Custo por lavagem (R$)',
+            texto: 'Valor gasto em cada lavagem do carro.'
+        },
+        outrasManutencoes: {
+            titulo: 'Outras manutenções',
+            texto: 'Adicione outros custos de manutenção que você tem com o veículo (ex: pastilha de freio, bateria, etc.).'
+        },
+        outrosFixosLista: {
+            titulo: 'Outros custos fixos customizáveis',
+            texto: 'Adicione outros custos fixos que você tem e que são rateados por dia (ex: aluguel de casa, plano de telefone, etc.).'
+        },
+        // Explicações para o resumo
+        resumoValorGanho: {
+            titulo: 'Valor ganho no período',
+            texto: 'Este é o total de ganhos brutos estimados para o período, calculado com base no KM rodado no período e no seu ganho por KM.'
+        },
+        resumoGanhoPorKm: {
+            titulo: 'Ganho por km real',
+            texto: 'O valor médio de ganho bruto por quilômetro rodado no período.'
+        },
+        resumoGanhoPorHora: {
+            titulo: 'Ganho por hora (bruto)',
+            texto: 'O valor médio de ganho bruto por hora trabalhada no período.'
+        },
+        resumoGastoCombustivel: {
+            titulo: 'Gasto com combustível (estimado)',
+            texto: 'O gasto total estimado com combustível no período, baseado no consumo do seu carro e na quilometragem rodada.'
+        },
+        resumoPctCombustivel: {
+            titulo: '% combustível sobre receita',
+            texto: 'A porcentagem que o custo com combustível representa sobre a sua receita total no período.'
+        },
+        resumoCustoFixoTotal: {
+            titulo: 'Custo fixo total (período)',
+            texto: 'A soma de todos os custos fixos (financiamento, seguro, IPVA, aluguel, etc.), proporcionais ao período de cálculo.'
+        },
+        resumoCustoManutencao: {
+            titulo: 'Custo manutenção (período)',
+            texto: 'A soma de todos os custos de manutenção (óleo, pneus, lavagem, etc.), calculados proporcionalmente à quilometragem ou ao período.'
+        },
+        resumoTotalGastos: {
+            titulo: 'Total de gastos (período)',
+            texto: 'A soma de todos os custos fixos, variáveis e de manutenção no período.'
+        },
+        resumoGanhoLiquido: {
+            titulo: 'Ganho líquido (período)',
+            texto: 'Seu lucro final no período, calculado pela receita total menos o total de gastos.'
+        },
+        resumoPrecisaGanharDia: {
+            titulo: 'Quanto precisa ganhar por dia (bruto)',
+            texto: 'O faturamento diário necessário para cobrir todos os seus gastos fixos, variáveis e de manutenção no período.'
+        },
+        resumoMetaPorKm: {
+            titulo: 'Meta por km (bruta)',
+            texto: 'A meta de ganho por KM para atingir a meta diária de faturamento informada.'
+        },
+        resumoProjFinanciamentoKm: {
+            titulo: 'Quilometragem ao fim do financiamento',
+            texto: 'A quilometragem estimada do carro quando o financiamento terminar, com base no seu KM diário e no número de parcelas restantes.'
+        },
+        resumoProjOleo: {
+            titulo: 'Trocas de óleo até o fim',
+            texto: 'O número de trocas de óleo necessárias até o final do financiamento.'
+        },
+        resumoProjPneu: {
+            titulo: 'Trocas de pneus até o fim',
+            texto: 'O número de trocas de pneus necessárias até o final do financiamento.'
+        },
+        detalhesTrocaOleo: {
+            titulo: 'Troca de óleo',
+            texto: 'O custo proporcional da troca de óleo no período, calculado com base na quilometragem rodada e no intervalo de troca.'
+        },
+        detalhesTrocaPneu: {
+            titulo: 'Troca de pneus',
+            texto: 'O custo proporcional da troca de pneus no período, calculado com base na quilometragem rodada e no intervalo de troca.'
+        },
+        detalhesLimpeza: {
+            titulo: 'Limpeza',
+            texto: 'O custo proporcional da limpeza do carro no período, com base na frequência e no valor por lavagem.'
+        },
+        outrosFixosProporcional: {
+            titulo: 'Outro custo fixo',
+            texto: 'O valor proporcional de um custo fixo customizado (ex: aluguel de casa) para o período de cálculo.'
+        },
+    };
+    
+    const valoresIniciais = {
+      periodoDias: 15,
+      kmPorDia: 100,
+      kmAtual: 60000,
+      ganhoPorKm: 3.30,
+      metaDiaria: 400,
+      horasTrabalhadasDia: 11.5,
+      precoLitro: 5.19,
+      consumo: 10.0,
+      valorAluguel: 0,
+      parcelaMensal: 1780,
+      parcelasRestantes: 0,
+      seguroMensal: 0,
+      ipvaMensal: 0,
+      depreciacaoMensal: 0,
+      intervaloOleo: 10000,
+      custoOleo: 150,
+      intervaloPneu: 50000,
+      custoPneu: 1200,
+      freqLavagem: 7,
+      custoLavagem: 30
+    };
+
+    // Função para formatar números para o padrão brasileiro (10.000,00)
+    function formatarNumeroBRL(numero, isDecimal = true) {
+        if (isDecimal) {
+            return numero.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        return numero.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+    }
+
+    // Função para converter string formatada em número para cálculo
+    function parseNumeroBRL(str) {
+      if (typeof str !== 'string') return str;
+      let cleanStr = str.replace(/\./g, '').replace(',', '.');
+      return parseFloat(cleanStr) || 0;
+    }
+
+    // Função para aplicar a formatação nos inputs
+    function aplicarFormatacao(input) {
+        const valor = parseNumeroBRL(input.value);
+        if (input.dataset.type === 'decimal') {
+            input.value = formatarNumeroBRL(valor, true);
+        } else if (input.dataset.type === 'number') {
+            input.value = formatarNumeroBRL(valor, false);
+        }
+    }
+
+    // Funções para criar linhas de dados dinâmicas
+    function criarManutencaoRow(name='', intervaloKm=10000, custo=0){
+      const div = document.createElement('div');
+      div.className='row';
+      div.style.marginTop='6px';
+      div.innerHTML = `
+        <input type="text" placeholder="nome" data-name class="" value="${name}" style="flex:1" />
+        <input type="text" data-type="number" placeholder="intervalo km" data-intervalo value="${intervaloKm}" style="width:140px" />
+        <input type="text" data-type="decimal" placeholder="custo R$" data-custo value="${custo}" style="width:140px" />
+        <button class="ghost" data-remove>Remover</button>
+      `;
+      outrasManutencoesDiv.appendChild(div);
+      div.querySelector('[data-remove]').addEventListener('click', ()=> {
+          div.remove();
+          recalcular();
+          salvarDados();
+      });
+      // Adiciona listener para recalcular e formatar
+      div.querySelectorAll('input').forEach(input => {
+          input.addEventListener('blur', () => aplicarFormatacao(input));
+          input.addEventListener('input', () => {
+            recalcular();
+            salvarDados();
+          });
+      });
+      aplicarFormatacao(div.querySelector('[data-intervalo]'));
+      aplicarFormatacao(div.querySelector('[data-custo]'));
+      salvarDados();
+    }
+
+    function criarOutroFixoRow(nome='', valor=0, periodicidade='mensal'){
+      const div = document.createElement('div');
+      div.className='row';
+      div.style.marginTop='6px';
+      div.innerHTML = `
+        <input type="text" placeholder="nome do custo" data-name style="flex:1" value="${nome}" />
+        <input type="text" data-type="decimal" placeholder="valor total" data-valor value="${valor}" style="width:140px" />
+        <select data-period style="width:120px">
+          <option value="mensal">Mensal</option>
+          <option value="quinzenal">Quinzenal</option>
+          <option value="semanal">Semanal</option>
+          <option value="diario">Diário</option>
+        </select>
+        <button class="ghost" data-remove>Remover</button>
+      `;
+      outrosFixosLista.appendChild(div);
+      div.querySelector('[data-period]').value = periodicidade;
+      div.querySelector('[data-remove]').addEventListener('click', ()=> {
+          div.remove();
+          recalcular();
+          salvarDados();
+      });
+      // Adiciona listener para recalcular e formatar
+      div.querySelectorAll('input, select').forEach(input => {
+          if (input.tagName === 'INPUT') {
+            input.addEventListener('blur', () => aplicarFormatacao(input));
+          }
+          input.addEventListener('input', () => {
+            recalcular();
+            salvarDados();
+          });
+      });
+      aplicarFormatacao(div.querySelector('[data-valor]'));
+      salvarDados();
+    }
+    
+    // Função para salvar dados no localStorage
+    function salvarDados() {
+        const dados = {};
+        $$('input:not([class="auto-calc"]), select').forEach(input => {
+            if (input.id) {
+                dados[input.id] = input.value;
+            }
+        });
+        
+        // Salvar manutenções dinâmicas
+        const outrasManut = Array.from(outrasManutencoesDiv.querySelectorAll('.row')).map(row => {
+          return {
+            name: row.querySelector('[data-name]').value,
+            intervaloKm: row.querySelector('[data-intervalo]').value,
+            custo: row.querySelector('[data-custo]').value
+          };
+        });
+        dados.outrasManut = outrasManut;
+
+        // Salvar custos fixos dinâmicos
+        const outrosFixos = Array.from(outrosFixosLista.querySelectorAll('.row')).map(row => {
+            return {
+                nome: row.querySelector('[data-name]').value,
+                valor: row.querySelector('[data-valor]').value,
+                periodicidade: row.querySelector('[data-period]').value
+            };
+        });
+        dados.outrosFixos = outrosFixos;
+
+        localStorage.setItem('calculadoraDados', JSON.stringify(dados));
+    }
+
+    // Função para carregar dados do localStorage
+    function carregarDados() {
+        const dadosSalvos = JSON.parse(localStorage.getItem('calculadoraDados'));
+        if (dadosSalvos) {
+            $$('input:not([class="auto-calc"]), select').forEach(input => {
+                if (dadosSalvos[input.id] !== undefined) {
+                    input.value = dadosSalvos[input.id];
+                    aplicarFormatacao(input);
+                }
+            });
+
+            // Carregar manutenções dinâmicas
+            if (dadosSalvos.outrasManut && dadosSalvos.outrasManut.length > 0) {
+              outrasManutencoesDiv.innerHTML = '';
+              dadosSalvos.outrasManut.forEach(m => criarManutencaoRow(m.name, m.intervaloKm, m.custo));
+            } else {
+              criarManutencaoRow('Pastilha de freio',30000,300);
+            }
+
+            // Carregar custos fixos dinâmicos
+            if (dadosSalvos.outrosFixos && dadosSalvos.outrosFixos.length > 0) {
+              outrosFixosLista.innerHTML = '';
+              dadosSalvos.outrosFixos.forEach(f => criarOutroFixoRow(f.nome, f.valor, f.periodicidade));
+            } else {
+              criarOutroFixoRow('Aluguel casa',1200,'mensal');
+            }
+        } else {
+            // Se não houver dados salvos, inicializa com valores padrão
+            criarManutencaoRow('Pastilha de freio',30000,300);
+            criarOutroFixoRow('Aluguel casa',1200,'mensal');
+            $$('input[data-type="number"], input[data-type="decimal"]').forEach(input => {
+                const valor = valoresIniciais[input.id];
+                if (valor !== undefined) {
+                    input.value = input.dataset.type === 'decimal' ? formatarNumeroBRL(valor, true) : formatarNumeroBRL(valor, false);
+                }
+            });
+        }
+        recalcular();
+    }
+    
+    // Função para pegar todos os dados preenchidos e calculados
+    function getDadosParaExportar() {
+      // Ler inputs
+      const periodoDias = parseNumeroBRL(periodoDiasInput.value || periodoDiasInput.placeholder) || 1;
+      const kmPorDia = parseNumeroBRL(kmPorDiaInput.value || kmPorDiaInput.placeholder) || 0;
+      const kmAtual = parseNumeroBRL(kmAtualInput.value || kmAtualInput.placeholder) || 0;
+      const ganhoPorKm = parseNumeroBRL(ganhoPorKmInput.value || ganhoPorKmInput.placeholder) || 0;
+      const precoLitro = parseNumeroBRL(precoLitroInput.value || precoLitroInput.placeholder) || 0;
+      const consumo = parseNumeroBRL(consumoInput.value || consumoInput.placeholder) || 1;
+      const tipoCarro = tipoCarroSelect.value;
+      const horasTrabalhadasDia = parseNumeroBRL($('horasTrabalhadasDia').value || $('horasTrabalhadasDia').placeholder) || 0;
+      const freqLavagem = parseNumeroBRL($('freqLavagem').value || $('freqLavagem').placeholder) || 7;
+      const custoLavagem = parseNumeroBRL($('custoLavagem').value || $('custoLavagem').placeholder) || 0;
+      const metaDiaria = parseNumeroBRL($('metaDiaria').value || $('metaDiaria').placeholder) || 0;
+      const valorAluguel = parseNumeroBRL($('valorAluguel').value || $('valorAluguel').placeholder) || 0;
+      const parcelaMensal = parseNumeroBRL($('parcelaMensal').value || $('parcelaMensal').placeholder) || 0;
+      const seguroMensal = parseNumeroBRL($('seguroMensal').value || $('seguroMensal').placeholder) || 0;
+      const ipvaMensal = parseNumeroBRL($('ipvaMensal').value || $('ipvaMensal').placeholder) || 0;
+      const depreciacaoMensal = parseNumeroBRL($('depreciacaoMensal').value || $('depreciacaoMensal').placeholder) || 0;
+      const intervaloOleo = parseNumeroBRL($('intervaloOleo').value || $('intervaloOleo').placeholder) || 10000;
+      const custoOleo = parseNumeroBRL($('custoOleo').value || $('custoOleo').placeholder) || 0;
+      const intervaloPneu = parseNumeroBRL($('intervaloPneu').value || $('intervaloPneu').placeholder) || 50000;
+      const custoPneu = parseNumeroBRL($('custoPneu').value || $('custoPneu').placeholder) || 0;
+      const parcelasRestantes = parseNumeroBRL($('parcelasRestantes').value || $('parcelasRestantes').placeholder) || 0;
+
+      // Calcular valores para o resumo
+      const kmPeriodo = kmPorDia * periodoDias;
+      const kmFinalPrevisto = kmAtual + kmPeriodo;
+      const valorGanho = kmPeriodo * ganhoPorKm;
+      const litrosConsumidos = consumo > 0 ? (kmPeriodo / consumo) : 0;
+      const gastoCombustivel = litrosConsumidos * precoLitro;
+      const pctCombustivel = valorGanho > 0 ? (gastoCombustivel / valorGanho) * 100 : 0;
+      const horasTrabalhadasTotal = horasTrabalhadasDia * periodoDias;
+      const diasBaseMes = 30;
+
+      let custoFixoDiario = 0;
+      if(tipoCarro==='alugado'){ custoFixoDiario += (valorAluguel / diasBaseMes); }
+      if(tipoCarro==='financiado'){ custoFixoDiario += (parcelaMensal + seguroMensal + ipvaMensal + depreciacaoMensal) / diasBaseMes; }
+      if(tipoCarro==='proprio'){ custoFixoDiario += (seguroMensal + ipvaMensal + depreciacaoMensal) / diasBaseMes; }
+
+      const outrosFixos = Array.from(outrosFixosLista.querySelectorAll('.row')).map(div=>{
+        const nome = div.querySelector('[data-name]').value||'';
+        const valor = parseNumeroBRL(div.querySelector('[data-valor]').value)||0;
+        const period = div.querySelector('[data-period]').value||'mensal';
+        return {nome,valor,period};
+      });
+      let outrosFixosTotalPeriodo = 0;
+      outrosFixos.forEach(it=>{
+        let proporcional=0;
+        switch(it.period){
+          case 'mensal': proporcional = (it.valor / diasBaseMes) * periodoDias; break;
+          case 'quinzenal': proporcional = (it.valor / 15) * periodoDias; break;
+          case 'semanal': proporcional = (it.valor / 7) * periodoDias; break;
+          case 'diario': proporcional = it.valor * periodoDias; break;
+        }
+        outrosFixosTotalPeriodo += proporcional;
+      });
+      const custoFixoTotalPeriodo = (custoFixoDiario * periodoDias) + outrosFixosTotalPeriodo;
+      const custosVariaveisPeriodo = gastoCombustivel;
+      const deltaKm = Math.max(kmFinalPrevisto - kmAtual, 0);
+      const custoTotalOleo = (tipoCarro === 'proprio' || tipoCarro === 'financiado') && intervaloOleo > 0 ? (deltaKm / intervaloOleo) * custoOleo : 0;
+      const custoTotalPneu = (tipoCarro === 'proprio' || tipoCarro === 'financiado') && intervaloPneu > 0 ? (deltaKm / intervaloPneu) * custoPneu : 0;
+      const custoTotalLavagem = (periodoDias / Math.max(freqLavagem,1)) * custoLavagem;
+      const outrasManut = Array.from(outrasManutencoesDiv.querySelectorAll('.row')).map(div=>{
+        const nome = div.querySelector('[data-name]').value||'outra';
+        const intervalo = parseNumeroBRL(div.querySelector('[data-intervalo]').value)||0;
+        const custo = parseNumeroBRL(div.querySelector('[data-custo]').value)||0;
+        return {nome,intervalo,custo};
+      });
+      let custoOutrasManutPeriodo = 0;
+      outrasManut.forEach(m=>{
+        let proporcional=0;
+        if(m.intervalo > 0){ proporcional = (deltaKm / m.intervalo) * m.custo; }
+        custoOutrasManutPeriodo += proporcional;
+      });
+      const custoManutencaoPeriodo = custoTotalOleo + custoTotalPneu + custoTotalLavagem + custoOutrasManutPeriodo;
+      const totalGastosPeriodo = custoFixoTotalPeriodo + custosVariaveisPeriodo + custoManutencaoPeriodo;
+      const ganhoLiquidoPeriodo = valorGanho - totalGastosPeriodo;
+      const precisaGanharPorDia = ( totalGastosPeriodo / periodoDias );
+      const ganhoPorKmReal = kmPeriodo > 0 ? valorGanho / kmPeriodo : 0;
+      const ganhoPorHora = horasTrabalhadasTotal > 0 ? (valorGanho / horasTrabalhadasTotal) : 0;
+      const metaPorKmBruta = (kmPorDia > 0 ? (metaDiaria / kmPorDia) : 0);
+      const sugestaoGanhoPorKm = (kmPorDia > 0) ? metaDiaria / kmPorDia : 0;
+
+      // Cálculos adicionais para o financiamento
+      let kmFinalFinanciamento = 0;
+      let trocasOleoFinal = 0;
+      let trocasPneuFinal = 0;
+      if (tipoCarro === 'financiado' && parcelasRestantes > 0 && kmPorDia > 0) {
+          const diasRestantes = parcelasRestantes * diasBaseMes;
+          const kmRestantes = kmPorDia * diasRestantes;
+          kmFinalFinanciamento = kmAtual + kmRestantes;
+          trocasOleoFinal = intervaloOleo > 0 ? (kmRestantes / intervaloOleo) : 0;
+          trocasPneuFinal = intervaloPneu > 0 ? (kmRestantes / intervaloPneu) : 0;
+      }
+
+      // Estrutura de dados para o JSON
+      const dados = {
+        configuracoes: {
+          tipoCarro: tipoCarro,
+          periodoDias: periodoDias,
+          kmPorDia: kmPorDia,
+          kmAtual: kmAtual,
+          kmFinalPrevisto: kmFinalPrevisto
+        },
+        ganhos: {
+          ganhoPorKm: ganhoPorKm,
+          valorGanhoPeriodo: valorGanho,
+          metaDiariaBruta: metaDiaria,
+          horasTrabalhadasDia: horasTrabalhadasDia
+        },
+        combustivel: {
+          precoLitro: precoLitro,
+          consumo: consumo,
+          gastoCombustivelPeriodo: gastoCombustivel,
+          pctCombustivelSobreReceita: pctCombustivel
+        },
+        custosFixos: {
+          aluguelMensal: valorAluguel,
+          parcelaMensal: parcelaMensal,
+          seguroMensal: seguroMensal,
+          ipvaMensal: ipvaMensal,
+          depreciacaoMensal: depreciacaoMensal,
+          parcelasRestantes: parcelasRestantes,
+          outrosFixos: outrosFixos
+        },
+        manutencao: {
+          intervaloOleo: intervaloOleo,
+          custoOleo: custoOleo,
+          intervaloPneu: intervaloPneu,
+          custoPneu: custoPneu,
+          freqLavagem: freqLavagem,
+          custoLavagem: custoLavagem,
+          outrasManutencoes: outrasManut
+        },
+        resumo: {
+          kmRodadosPeriodo: kmPeriodo,
+          litrosConsumidos: litrosConsumidos,
+          ganhoLiquidoPeriodo: ganhoLiquidoPeriodo,
+          totalGastosPeriodo: totalGastosPeriodo,
+          ganhoPorKmReal: ganhoPorKmReal,
+          ganhoPorHoraBruto: ganhoPorHora,
+          precisaGanharPorDia: precisaGanharPorDia,
+          metaPorKmBruta: metaPorKmBruta,
+          sugestaoGanhoPorKm: sugestaoGanhoPorKm
+        },
+        projecaoFinanciamento: {
+          kmFinalFinanciamento: kmFinalFinanciamento,
+          trocasOleoFinal: trocasOleoFinal,
+          trocasPneuFinal: trocasPneuFinal,
+        }
+      };
+      return dados;
+    }
+
+    // Função para exportar JSON
+    function exportarJSON() {
+      const dados = getDadosParaExportar();
+      const jsonData = JSON.stringify(dados, null, 2);
+      const blob = new Blob([jsonData], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const hoje = new Date();
+      const nomeArquivo = `calculadora_motorista_${hoje.toLocaleDateString('pt-BR').replace(/\//g, '-')}.json`;
+      a.download = nomeArquivo;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    // Função principal para recalcular todos os valores
+    function recalcular() {
+      // Ler inputs
+      const periodoDias = parseNumeroBRL(periodoDiasInput.value || periodoDiasInput.placeholder) || 1;
+      const kmPorDia = parseNumeroBRL(kmPorDiaInput.value || kmPorDiaInput.placeholder) || 0;
+      const kmAtual = parseNumeroBRL(kmAtualInput.value || kmAtualInput.placeholder) || 0;
+      const ganhoPorKm = parseNumeroBRL(ganhoPorKmInput.value || ganhoPorKmInput.placeholder) || 0;
+      const precoLitro = parseNumeroBRL(precoLitroInput.value || precoLitroInput.placeholder) || 0;
+      const consumo = parseNumeroBRL(consumoInput.value || consumoInput.placeholder) || 1;
+      const tipoCarro = tipoCarroSelect.value;
+      const horasTrabalhadasDia = parseNumeroBRL($('horasTrabalhadasDia').value || $('horasTrabalhadasDia').placeholder) || 0;
+      const freqLavagem = parseNumeroBRL($('freqLavagem').value || $('freqLavagem').placeholder) || 7;
+      const custoLavagem = parseNumeroBRL($('custoLavagem').value || $('custoLavagem').placeholder) || 0;
+      const metaDiaria = parseNumeroBRL($('metaDiaria').value || $('metaDiaria').placeholder) || 0;
+      const valorAluguel = parseNumeroBRL($('valorAluguel').value || $('valorAluguel').placeholder) || 0;
+      const parcelaMensal = parseNumeroBRL($('parcelaMensal').value || $('parcelaMensal').placeholder) || 0;
+      const seguroMensal = parseNumeroBRL($('seguroMensal').value || $('seguroMensal').placeholder) || 0;
+      const ipvaMensal = parseNumeroBRL($('ipvaMensal').value || $('ipvaMensal').placeholder) || 0;
+      const depreciacaoMensal = parseNumeroBRL($('depreciacaoMensal').value || $('depreciacaoMensal').placeholder) || 0;
+      const intervaloOleo = parseNumeroBRL($('intervaloOleo').value || $('intervaloOleo').placeholder) || 10000;
+      const custoOleo = parseNumeroBRL($('custoOleo').value || $('custoOleo').placeholder) || 0;
+      const intervaloPneu = parseNumeroBRL($('intervaloPneu').value || $('intervaloPneu').placeholder) || 50000;
+      const custoPneu = parseNumeroBRL($('custoPneu').value || $('custoPneu').placeholder) || 0;
+      const parcelasRestantes = parseNumeroBRL($('parcelasRestantes').value || $('parcelasRestantes').placeholder) || 0;
+      
+      // Calcular valores automáticos
+      const kmPeriodo = kmPorDia * periodoDias;
+      const kmFinalPrevisto = kmAtual + kmPeriodo;
+      const valorGanho = kmPeriodo * ganhoPorKm;
+      const litrosConsumidos = consumo > 0 ? (kmPeriodo / consumo) : 0;
+      const gastoCombustivel = litrosConsumidos * precoLitro;
+      const pctCombustivel = valorGanho > 0 ? (gastoCombustivel / valorGanho) * 100 : 0;
+      const horasTrabalhadasTotal = horasTrabalhadasDia * periodoDias;
+      const sugestaoGanhoPorKm = (kmPorDia > 0) ? metaDiaria / kmPorDia : 0;
+      
+      // Atualizar campos automáticos
+      kmFinalPrevistoInput.value = formatarNumeroBRL(kmFinalPrevisto, false);
+      valorGanhoInput.value = formatarNumeroBRL(valorGanho);
+      gastoCombustivelInput.value = formatarNumeroBRL(gastoCombustivel);
+      pctCombustivelInput.value = formatarNumeroBRL(pctCombustivel) + ' %';
+      
+      if (sugestaoGanhoPorKm > 0) {
+          sugestaoGanhoKmDiv.textContent = `Para atingir a meta, o ganho por KM precisa ser R$ ${formatarNumeroBRL(sugestaoGanhoPorKm)}.`;
+      } else {
+          sugestaoGanhoKmDiv.textContent = '';
+      }
+      
+      // Lógica de visibilidade dos campos com base no tipo de carro
+      const parcelaRestantesField = document.getElementById('parcelasRestantes').parentElement;
+      if (tipoCarro === 'alugado') {
+        blocoAluguel.style.display = 'block';
+        blocoProprioFinanciado.style.display = 'none';
+        parcelaRestantesField.style.display = 'none';
+      } else if (tipoCarro === 'financiado') {
+        blocoAluguel.style.display = 'none';
+        blocoProprioFinanciado.style.display = 'block';
+        parcelaRestantesField.style.display = 'block';
+      } else { // proprio
+        blocoAluguel.style.display = 'none';
+        blocoProprioFinanciado.style.display = 'block';
+        parcelaRestantesField.style.display = 'none';
+      }
+      
+      // Manutenção e custos fixos são sempre visíveis, mas o cálculo se adapta.
+      const isFinanciadoOuProprio = (tipoCarro === 'financiado' || tipoCarro === 'proprio');
+      if (isFinanciadoOuProprio) {
+        document.getElementById('secaoManutencao').style.display = 'block';
+      } else {
+        document.getElementById('secaoManutencao').style.display = 'none';
+      }
+
+      // Outros fixos e manutenções customizadas
+      const outrosFixos = Array.from(outrosFixosLista.querySelectorAll('.row')).map(div=>{
+        const nome = div.querySelector('[data-name]').value||'';
+        const valor = parseNumeroBRL(div.querySelector('[data-valor]').value)||0;
+        const period = div.querySelector('[data-period]').value||'mensal';
+        return {nome,valor,period};
+      });
+
+      const outrasManut = Array.from(outrasManutencoesDiv.querySelectorAll('.row')).map(div=>{
+        const nome = div.querySelector('[data-name]').value||'outra';
+        const intervalo = parseNumeroBRL(div.querySelector('[data-intervalo]').value)||0;
+        const custo = parseNumeroBRL(div.querySelector('[data-custo]').value)||0;
+        return {nome,intervalo,custo};
+      });
+
+      // Cálculo final para o resumo (sem duplicação de código)
+      calcularResumo(
+        periodoDias,
+        kmPeriodo,
+        kmAtual,
+        kmFinalPrevisto,
+        valorGanho,
+        horasTrabalhadasTotal,
+        litrosConsumidos,
+        gastoCombustivel,
+        pctCombustivel,
+        tipoCarro,
+        outrosFixos,
+        outrasManut,
+        metaDiaria,
+        valorAluguel,
+        parcelaMensal,
+        seguroMensal,
+        ipvaMensal,
+        depreciacaoMensal,
+        intervaloOleo,
+        custoOleo,
+        intervaloPneu,
+        custoPneu,
+        freqLavagem,
+        custoLavagem,
+        kmPorDia,
+        parcelasRestantes
+      );
+    }
+    
+    // Função para calcular e renderizar o resumo
+    function calcularResumo(
+      periodoDias,
+      kmPeriodo,
+      kmAtual,
+      kmFinal,
+      valorGanho,
+      horasTrab,
+      litrosConsumidos,
+      gastoCombustivel,
+      pctCombustivel,
+      tipoCarro,
+      outrosFixos,
+      outrasManut,
+      metaDiaria,
+      valorAluguel,
+      parcelaMensal,
+      seguroMensal,
+      ipvaMensal,
+      depreciacaoMensal,
+      intervaloOleo,
+      custoOleo,
+      intervaloPneu,
+      custoPneu,
+      freqLavagem,
+      custoLavagem,
+      kmPorDia,
+      parcelasRestantes
+    ){
+        // Calculos principais
+        const ganhoPorKmReal = kmPeriodo > 0 ? valorGanho / kmPeriodo : 0;
+        const ganhoPorHora = horasTrab > 0 ? (valorGanho / horasTrab) : 0;
+        const diasBaseMes = 30;
+
+        let custoFixoDiario = 0;
+        if(tipoCarro==='alugado'){
+          custoFixoDiario += (valorAluguel / diasBaseMes);
+        }
+        if(tipoCarro==='financiado'){
+          custoFixoDiario += (parcelaMensal + seguroMensal + ipvaMensal + depreciacaoMensal) / diasBaseMes;
+        }
+        if(tipoCarro==='proprio'){
+          custoFixoDiario += (seguroMensal + ipvaMensal + depreciacaoMensal) / diasBaseMes;
+        }
+        
+        let outrosFixosTotalPeriodo = 0;
+        outrosFixos.forEach(it=>{
+          let proporcional=0;
+          switch(it.period){
+            case 'mensal': proporcional = (it.valor / diasBaseMes) * periodoDias; break;
+            case 'quinzenal': proporcional = (it.valor / 15) * periodoDias; break;
+            case 'semanal': proporcional = (it.valor / 7) * periodoDias; break;
+            case 'diario': proporcional = it.valor * periodoDias; break;
+          }
+          outrosFixosTotalPeriodo += proporcional;
+        });
+
+        const custoFixoTotalPeriodo = (custoFixoDiario * periodoDias) + outrosFixosTotalPeriodo;
+        const custosVariaveisPeriodo = gastoCombustivel;
+        
+        const deltaKm = Math.max(kmFinal - kmAtual, 0);
+        // Cálculos proporcionais
+        const custoTotalOleo = (tipoCarro === 'proprio' || tipoCarro === 'financiado') && intervaloOleo > 0 ? (deltaKm / intervaloOleo) * custoOleo : 0;
+        const custoTotalPneu = (tipoCarro === 'proprio' || tipoCarro === 'financiado') && intervaloPneu > 0 ? (deltaKm / intervaloPneu) * custoPneu : 0;
+        const custoTotalLavagem = (periodoDias / Math.max(freqLavagem,1)) * custoLavagem;
+        
+        let custoOutrasManutPeriodo = 0;
+        outrasManut.forEach(m=>{
+          let proporcional=0;
+          if(m.intervalo > 0){
+            proporcional = (deltaKm / m.intervalo) * m.custo;
+          }
+          custoOutrasManutPeriodo += proporcional;
+        });
+
+        const custoManutencaoPeriodo = (tipoCarro === 'proprio' || tipoCarro === 'financiado') ? (custoTotalOleo + custoTotalPneu + custoTotalLavagem + custoOutrasManutPeriodo) : 0;
+        const totalGastosPeriodo = custoFixoTotalPeriodo + custosVariaveisPeriodo + custoManutencaoPeriodo;
+        const ganhoLiquidoPeriodo = valorGanho - totalGastosPeriodo;
+        const precisaGanharPorDia = ( totalGastosPeriodo / periodoDias );
+        const metaPorKmBruta = (kmPorDia > 0 ? (metaDiaria / kmPorDia) : 0);
+        
+        // Projeção do financiamento
+        let kmFinalFinanciamentoHTML = '';
+        let trocasOleoFinalHTML = '';
+        let trocasPneuFinalHTML = '';
+        if (tipoCarro === 'financiado' && parcelasRestantes > 0 && kmPorDia > 0 && intervaloOleo > 0 && intervaloPneu > 0) {
+            const diasRestantes = parcelasRestantes * diasBaseMes;
+            const kmRestantes = kmPorDia * diasRestantes;
+            const kmFinalFinanciamento = kmAtual + kmRestantes;
+            const trocasOleoFinal = (kmRestantes / intervaloOleo);
+            const trocasPneuFinal = (kmRestantes / intervaloPneu);
+            
+            kmFinalFinanciamentoHTML = `<tr><td><span class="table-label-with-info">Quilometragem ao fim do financiamento<span class="info-icon" data-info-target="resumoProjFinanciamentoKm">?</span></span></td><td>${formatarNumeroBRL(kmFinalFinanciamento, false)} km</td></tr>`;
+            trocasOleoFinalHTML = `<tr><td><span class="table-label-with-info">Trocas de óleo até o fim<span class="info-icon" data-info-target="resumoProjOleo">?</span></span></td><td>${formatarNumeroBRL(trocasOleoFinal, true)}</td></tr>`;
+            trocasPneuFinalHTML = `<tr><td><span class="table-label-with-info">Trocas de pneus até o fim<span class="info-icon" data-info-target="resumoProjPneu">?</span></span></td><td>${formatarNumeroBRL(trocasPneuFinal, true)}</td></tr>`;
+        }
+
+        // Renderizar o resumo
+        const resumoHTML = document.createElement('div');
+        resumoHTML.innerHTML = `
+          <h3>Resumo (período: ${periodoDias} dias)</h3>
+          <table>
+            <tr><th>Item</th><th>Valor</th></tr>
+            <tr><td><span class="table-label-with-info">Valor ganho no período<span class="info-icon" data-info-target="resumoValorGanho">?</span></span></td><td>R$ ${formatarNumeroBRL(valorGanho)}</td></tr>
+            <tr><td><span class="table-label-with-info">Ganho por km real<span class="info-icon" data-info-target="resumoGanhoPorKm">?</span></span></td><td>R$ ${formatarNumeroBRL(ganhoPorKmReal)}/km</td></tr>
+            <tr><td><span class="table-label-with-info">Ganho por hora (bruto)<span class="info-icon" data-info-target="resumoGanhoPorHora">?</span></span></td><td>R$ ${formatarNumeroBRL(ganhoPorHora)}/h</td></tr>
+            <tr><td><span class="table-label-with-info">Gasto com combustível (estimado)<span class="info-icon" data-info-target="resumoGastoCombustivel">?</span></span></td><td>R$ ${formatarNumeroBRL(gastoCombustivel)} (${formatarNumeroBRL(litrosConsumidos, true)} L)</td></tr>
+            <tr><td><span class="table-label-with-info">% combustível sobre receita<span class="info-icon" data-info-target="resumoPctCombustivel">?</span></span></td><td>${formatarNumeroBRL(pctCombustivel)} %</td></tr>
+            <tr><td><span class="table-label-with-info">Custo fixo total (período)<span class="info-icon" data-info-target="resumoCustoFixoTotal">?</span></span></td><td>R$ ${formatarNumeroBRL(custoFixoTotalPeriodo)}</td></tr>
+            <tr><td><span class="table-label-with-info">Custo manutenção (período)<span class="info-icon" data-info-target="resumoCustoManutencao">?</span></span></td><td>R$ ${formatarNumeroBRL(custoManutencaoPeriodo)}</td></tr>
+            <tr><td><span class="table-label-with-info">Total de gastos (período)<span class="info-icon" data-info-target="resumoTotalGastos">?</span></span></td><td>R$ ${formatarNumeroBRL(totalGastosPeriodo)}</td></tr>
+            <tr><td><span class="table-label-with-info">Ganho líquido (período)<span class="info-icon" data-info-target="resumoGanhoLiquido">?</span></span></td><td class="result">R$ ${formatarNumeroBRL(ganhoLiquidoPeriodo)}</td></tr>
+            <tr><td><span class="table-label-with-info">Quanto precisa ganhar por dia (bruto)<span class="info-icon" data-info-target="resumoPrecisaGanharDia">?</span></span></td><td>R$ ${formatarNumeroBRL(precisaGanharPorDia)}/dia</td></tr>
+            <tr><td><span class="table-label-with-info">Meta por km (bruta)<span class="info-icon" data-info-target="resumoMetaPorKm">?</span></span></td><td>R$ ${formatarNumeroBRL(metaPorKmBruta)}/km</td></tr>
+            ${kmFinalFinanciamentoHTML}
+            ${trocasOleoFinalHTML}
+            ${trocasPneuFinalHTML}
+          </table>
+          <h4>Detalhes de manutenção</h4>
+          <table>
+            <tr><th>Manutenção</th><th>Custo proporcional no período</th></tr>
+            <tr><td><span class="table-label-with-info">Troca de óleo (intervalo ${formatarNumeroBRL(intervaloOleo, false)} km)<span class="info-icon" data-info-target="detalhesTrocaOleo">?</span></span></td><td>R$ ${formatarNumeroBRL(custoTotalOleo)}</td></tr>
+            <tr><td><span class="table-label-with-info">Troca de pneus (intervalo ${formatarNumeroBRL(intervaloPneu, false)} km)<span class="info-icon" data-info-target="detalhesTrocaPneu">?</span></span></td><td>R$ ${formatarNumeroBRL(custoTotalPneu)}</td></tr>
+            <tr><td><span class="table-label-with-info">Limpeza (cada ${formatarNumeroBRL(freqLavagem, false)} dias)<span class="info-icon" data-info-target="detalhesLimpeza">?</span></span></td><td>R$ ${formatarNumeroBRL(custoTotalLavagem)}</td></tr>
+          </table>
+        `;
+        if(outrosFixos.length>0){
+            const table = document.createElement('table');
+            table.innerHTML = '<tr><th>Outro fixo</th><th>Valor proporcional no período</th></tr>';
+            outrosFixos.forEach(it=>{
+              let proporcional=0;
+              switch(it.period){
+                case 'mensal': proporcional = (it.valor / diasBaseMes) * periodoDias; break;
+                case 'quinzenal': proporcional = (it.valor / 15) * periodoDias; break;
+                case 'semanal': proporcional = (it.valor / 7) * periodoDias; break;
+                case 'diario': proporcional = it.valor * periodoDias; break;
+              }
+              const r = document.createElement('tr');
+              r.innerHTML = `<td><span class="table-label-with-info">${it.nome}<span class="info-icon" data-info-target="outrosFixosProporcional">?</span></span></td><td>R$ ${formatarNumeroBRL(proporcional)}</td>`;
+              table.appendChild(r);
+            });
+            resumoHTML.appendChild(table);
+        }
+        resumoContainer.innerHTML = '';
+        resumoContainer.appendChild(resumoHTML);
+
+        // Re-adiciona os listeners para os novos ícones
+        $$('.info-icon').forEach(icon => {
+            icon.addEventListener('click', (event) => {
+                const target = event.target.dataset.infoTarget;
+                const explicacao = campoExplicacoes[target];
+                if (explicacao) {
+                    tooltipTitle.textContent = explicacao.titulo;
+                    tooltipText.textContent = explicacao.texto;
+                    tooltipContainer.style.display = 'block';
+                }
+            });
+        });
+    }
+    
+    // Listeners para atualizar os cálculos e a formatação
+    $$('input:not([class="auto-calc"]), select').forEach(input => {
+        if (input.id !== 'tipoCarro') {
+            input.addEventListener('keydown', pularParaProximoCampo);
+        }
+        input.addEventListener('blur', () => {
+            aplicarFormatacao(input);
+            salvarDados();
+        });
+        input.addEventListener('input', () => {
+            recalcular();
+            salvarDados();
+        });
+    });
+
+    tipoCarroSelect.addEventListener('input', () => {
+        recalcular();
+        salvarDados();
+    });
+
+    $('btnExportarJson').addEventListener('click', exportarJSON);
+
+    $('btnAddManut').addEventListener('click', (e)=>{e.preventDefault();criarManutencaoRow();});
+    $('btnAddFix').addEventListener('click', (e)=>{e.preventDefault();criarOutroFixoRow();});
+
+    $('btnReset').addEventListener('click', ()=>{
+      if(confirm('Tem certeza que deseja limpar todos os campos e restaurar os valores iniciais?')) {
+        localStorage.removeItem('calculadoraDados');
+        location.reload();
+      }
+    });
+
+    $('btnCalcular').addEventListener('click', recalcular);
+
+    // Event listener para os ícones de informação
+    $$('.info-icon').forEach(icon => {
+        icon.addEventListener('click', (event) => {
+            const target = event.target.dataset.infoTarget;
+            const explicacao = campoExplicacoes[target];
+            if (explicacao) {
+                tooltipTitle.textContent = explicacao.titulo;
+                tooltipText.textContent = explicacao.texto;
+                tooltipContainer.style.display = 'block';
+            }
+        });
+    });
+    
+    // Função para mover o foco para o próximo campo
+    function pularParaProximoCampo(event) {
+        if (event.key === 'Enter') {
+            const campos = Array.from($$('input, select')).filter(input => !input.hasAttribute('readonly') && input.offsetParent !== null);
+            const index = campos.indexOf(event.target);
+            if (index > -1 && index < campos.length - 1) {
+                campos[index + 1].focus();
+            } else if (index === campos.length - 1) {
+                $('btnCalcular').focus();
+            }
+            event.preventDefault();
+        }
+    }
+
+    // Inicialização
+    window.onload = function() {
+        carregarDados();
+    }
+  </script>
+</body>
+</html>
