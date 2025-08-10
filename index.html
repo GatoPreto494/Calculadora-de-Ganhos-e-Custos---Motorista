@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Calculadora de Ganhos e Custos - Motorista</title>
   <style>
-    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--surface:#0b1220;--white:#fff;--black:#000}
+    :root{--bg:#0f1724;--card:#1a202c;--accent:#06b6d4;--muted:#94a3b8;--surface:#0b1220;--white:#fff;--black:#000;--header-bg: #2d3748;}
     *{box-sizing:border-box;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial}
     body{margin:0;background:linear-gradient(180deg,#071021 0%, #071428 100%);color:#e6eef6;padding:20px}
     header{display:flex;gap:12px;align-items:center;margin-bottom:16px}
@@ -19,7 +19,21 @@
         }
     }
     
-    .card{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    
+    /* Estilo para o cabeçalho das seções */
+    .card-header {
+      background-color: var(--header-bg);
+      margin: -12px;
+      padding: 12px;
+      border-radius: 10px 10px 0 0;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--black); /* Borda preta para separar */
+    }
+    
     label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
     input[type="text"], input[type="number"], select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit}
     /* Estilo para o select com fundo branco e letras pretas */
@@ -126,7 +140,9 @@
 
   <main class="grid">
     <section class="card">
-      <div class="flex-between"><strong>1. Configurações</strong><span class="muted">Período e tipo de veículo</span></div>
+      <div class="card-header">
+        <strong>1. Configurações</strong><span class="muted">Período e tipo de veículo</span>
+      </div>
       <label class="label-with-info">
         <span>Tipo de carro</span>
         <span class="info-icon" data-info-target="tipoCarro">?</span>
@@ -173,7 +189,9 @@
     </section>
 
     <section class="card">
-      <div class="flex-between"><strong>2. Ganhos e metas</strong><span class="muted">Receita e objetivos</span></div>
+      <div class="card-header">
+        <strong>2. Ganhos e metas</strong><span class="muted">Receita e objetivos</span>
+      </div>
       <div class="row">
         <div style="flex:1">
           <label class="label-with-info">
@@ -211,7 +229,9 @@
     </section>
 
     <section class="card">
-      <div class="flex-between"><strong>3. Combustível</strong><span class="muted">Consumo e gasto</span></div>
+      <div class="card-header">
+        <strong>3. Combustível</strong><span class="muted">Consumo e gasto</span>
+      </div>
       <div class="row">
         <div style="flex:1">
           <label class="label-with-info">
@@ -245,7 +265,9 @@
     </section>
 
     <section class="card" id="secaoCustos">
-      <div class="flex-between"><strong>4. Custos fixos</strong><span class="muted">Aluguel / parcela / seguro / estacionamento</span></div>
+      <div class="card-header">
+        <strong>4. Custos fixos</strong><span class="muted">Aluguel / parcela / seguro / estacionamento</span>
+      </div>
 
       <div id="blocoAluguel">
         <div style="margin-top:8px">
@@ -303,7 +325,9 @@
     </section>
 
     <section class="card" id="secaoManutencao">
-      <div class="flex-between"><strong>5. Manutenção preventiva</strong><span class="muted">Óleo, pneus, limpeza</span></div>
+      <div class="card-header">
+        <strong>5. Manutenção preventiva</strong><span class="muted">Óleo, pneus, limpeza</span>
+      </div>
 
       <div id="blocoManutencaoPadrao">
         <div style="margin-top:6px">
@@ -358,7 +382,7 @@
     </section>
 
     <section class="card full">
-      <div class="flex-between">
+      <div class="card-header">
         <strong>6. Outros custos fixos customizáveis</strong>
         <span class="info-icon" data-info-target="outrosFixosLista">?</span>
       </div>
@@ -370,7 +394,9 @@
     </section>
 
     <section class="card full">
-      <div class="flex-between"><strong>7. Ações</strong><span class="muted">Executar cálculos</span></div>
+      <div class="card-header">
+        <strong>7. Ações</strong><span class="muted">Executar cálculos</span>
+      </div>
       <div class="actions">
         <button id="btnCalcular">Calcular</button>
         <button id="btnExportarJson">Exportar JSON</button>
